@@ -1,0 +1,8 @@
+[
+  {
+    "directory": "/home/hongtao/doca-stdexec/builddir",
+    "command": "c++ -Itest/basic.p -Itest -I../test -I../stdexec/include -Iinclude -I../include -I/opt/mellanox/doca/include -I/usr/include/libnl3 -fdiagnostics-color=always -D_GLIBCXX_ASSERTIONS=1 -D_FILE_OFFSET_BITS=64 -Wall -Winvalid-pch -std=c++23 -O0 -g -DDOCA_ALLOW_EXPERIMENTAL_API -DALLOW_EXPERIMENTAL_API -MD -MQ test/basic.p/basic.cpp.o -MF test/basic.p/basic.cpp.o.d -o test/basic.p/basic.cpp.o -c ../test/basic.cpp",
+    "file": "../test/basic.cpp",
+    "output": "test/basic.p/basic.cpp.o"
+  }
+]
