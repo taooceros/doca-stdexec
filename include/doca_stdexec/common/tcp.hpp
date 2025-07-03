@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <span>
 #include <string>
 #include <string_view>
@@ -216,9 +217,9 @@ public:
     
     // Send data with length prefix (4-byte length + payload)
     void send_dynamic(std::span<const std::byte> data) {
-        std::uint32_t size = static_cast<std::uint32_t>(data.size());
+        size_t size = data.size();
         std::uint32_t network_size = htonl(size);
-        
+        printf("Sending dynamic message of size %zu\n", size);
         // Send length prefix first
         send_all(std::as_bytes(std::span{&network_size, 1}));
         // Then send the payload
@@ -233,10 +234,10 @@ public:
     // Receive data with length prefix - reads length first, then exact payload
     std::vector<std::byte> receive_dynamic(std::size_t max_size = 1024 * 1024 * 100) {
         // First, read the 4-byte length prefix
-        std::uint32_t network_size;
+        std::size_t network_size;
         receive_all(std::as_writable_bytes(std::span{&network_size, 1}));
-        
-        std::uint32_t size = ntohl(network_size);
+        std::size_t size = htonl(network_size);
+        printf("Received dynamic message of size %zu\n", size);
         if (size > max_size) {
             throw socket_error("Message too large: " + std::to_string(size) + 
                              " bytes (max: " + std::to_string(max_size) + ")");

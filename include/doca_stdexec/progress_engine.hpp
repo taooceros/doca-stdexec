@@ -2,7 +2,7 @@
 #ifndef DOCA_STDEXEC_PE_HPP
 #define DOCA_STDEXEC_PE_HPP
 
-#include "context.hpp"
+#include "doca_stdexec/context.hpp"
 #include "operation.hpp"
 #include <doca_pe.h>
 #include <stdexec/execution.hpp>
@@ -25,7 +25,7 @@ public:
   }
   ~ProgressEngine() = default;
 
-  doca_error connect_ctx(AsContext auto &ctx) {
+  doca_error connect_ctx(Context &ctx) {
     auto ctx_ptr = ctx.as_ctx();
     return doca_pe_connect_ctx(pe_.get(), ctx_ptr);
   }
@@ -161,7 +161,7 @@ public:
     [[nodiscard]]
     auto query(stdexec::get_forward_progress_guarantee_t) const noexcept
         -> stdexec::forward_progress_guarantee {
-      return stdexec::forward_progress_guarantee::weakly_parallel;
+      return stdexec::forward_progress_guarantee::concurrent;
     }
 
     // BUGBUG NOT TO SPEC
@@ -249,7 +249,7 @@ public:
 
   doca_pe_context() : doca_pe_context(ProgressEngine{}) {}
 
-  auto &get_pe() const noexcept { return pe_; }
+  auto &get_pe() noexcept { return pe_; }
 
   auto get_scheduler() const noexcept { return loop_->get_scheduler(); }
 

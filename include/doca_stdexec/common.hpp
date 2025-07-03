@@ -6,9 +6,13 @@
 #include <doca_error.h>
 
 namespace doca_stdexec {
-inline void check_error(doca_error_t err, const char *msg) {
+template <typename... Args>
+inline void check_error(doca_error_t err, const char *msg, Args... args) {
   if (err != DOCA_SUCCESS) {
-    printf(msg, err);
+    printf(msg, args...);
+    printf(". Error: %s [%d] (%s)\n", doca_error_get_name(err), err,
+           doca_error_get_descr(err));
+
     exit(1);
   }
 }

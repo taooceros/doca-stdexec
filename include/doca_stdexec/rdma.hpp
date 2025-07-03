@@ -6,12 +6,14 @@
 #define DOCA_STDEXEC_RDMA_HPP
 
 #include "doca_stdexec/common.hpp"
+#include "doca_stdexec/context.hpp"
 #include <memory>
 #include <span>
 
 #include "buf.hpp"
 #include "doca_stdexec/operation.hpp"
 #include "rdma/task.hpp"
+#include <doca_error.h>
 #include <doca_rdma.h>
 #include <stdexec/execution.hpp>
 
@@ -23,7 +25,7 @@ struct doca_rdma_deleter {
 
 struct RdmaConnection;
 
-struct Rdma : public std::enable_shared_from_this<Rdma> {
+struct Rdma : public std::enable_shared_from_this<Rdma>, public Context {
   doca_ctx *as_ctx() noexcept { return doca_rdma_as_ctx(rdma.get()); }
 
   std::unique_ptr<doca_rdma, doca_rdma_deleter> rdma;
@@ -32,11 +34,11 @@ struct Rdma : public std::enable_shared_from_this<Rdma> {
 
   Rdma(doca_rdma *rdma) : rdma(rdma) {}
 
-  static Rdma open_from_dev(doca_dev *dev) {
+  static std::shared_ptr<Rdma> open_from_dev(doca_dev *dev) {
     doca_rdma *rdma;
     auto status = doca_rdma_create(dev, &rdma);
-    check_error(status, "Failed to create rdma: %d\n");
-    return Rdma(rdma);
+    check_error(status, "Failed to create rdma");
+    return std::make_shared<Rdma>(rdma);
   }
 
   auto export_ctx();
@@ -52,7 +54,8 @@ struct RdmaConnection {
   doca_rdma_connection *connection;
   std::shared_ptr<Rdma> rdma;
 
-  RdmaConnection(std::shared_ptr<Rdma> rdma, doca_rdma_connection *connection);
+  RdmaConnection(std::shared_ptr<Rdma> rdma, doca_rdma_connection *connection)
+      : connection(connection), rdma(rdma) {}
 
   ~RdmaConnection();
 
@@ -74,7 +77,7 @@ inline auto Rdma::export_ctx() {
 
   auto status = doca_rdma_export(rdma.get(), &local_descriptor,
                                  &local_descriptor_size, &local_connection);
-  check_error(status, "Failed to export rdma ctx: %d\n");
+  check_error(status, "Failed to export rdma ctx");
 
   auto connection = RdmaConnection(shared_from_this(), local_connection);
 
@@ -87,15 +90,20 @@ inline auto Rdma::export_ctx() {
 inline void RdmaConnection::connect(std::span<std::byte> ctx) {
   auto status =
       doca_rdma_connect(rdma->get(), ctx.data(), ctx.size(), connection);
-  check_error(status, "Failed to connect rdma: %d\n");
+  check_error(status, "Failed to connect rdma");
 }
 
 inline RdmaConnection Rdma::connect(tcp::tcp_socket &socket) {
   auto [exported_ctx, connection] = export_ctx();
-  send_message(socket, exported_ctx);
-  auto received_ctx = receive_message(socket);
+  socket.send_dynamic(exported_ctx);
+  auto received_ctx = socket.receive_dynamic();
   connection.connect(received_ctx);
   return std::move(connection);
+}
+
+inline RdmaConnection::~RdmaConnection() {
+  auto status = doca_rdma_connection_disconnect(connection);
+  check_error(status, "Failed to disconnect rdma connection");
 }
 
 } // namespace doca_stdexec::rdma

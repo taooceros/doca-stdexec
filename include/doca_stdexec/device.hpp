@@ -15,7 +15,7 @@ struct doca_dev_deleter {
   void operator()(doca_dev *dev) { doca_dev_close(dev); }
 };
 
-struct Device {
+struct Device : public std::enable_shared_from_this<Device> {
   std::unique_ptr<doca_dev, doca_dev_deleter> device;
 
   Device(doca_dev *device) : device(device) {}

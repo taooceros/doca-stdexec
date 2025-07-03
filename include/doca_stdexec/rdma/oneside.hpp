@@ -14,7 +14,7 @@ struct RdmaWriteTask {
   using raw_type = doca_rdma_task_write;
 
 public:
-  RdmaWriteTask(doca_rdma_task_write *task);
+  RdmaWriteTask(doca_rdma_task_write *task) : task(task) {}
 
   static RdmaWriteTask allocate(doca_rdma *rdma, doca_rdma_connection *conn,
                                 Buf &src, Buf &dst) {

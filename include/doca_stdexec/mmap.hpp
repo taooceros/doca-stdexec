@@ -302,15 +302,14 @@ public:
    * @return std::pair<std::unique_ptr<uint8_t[]>, size_t> containing export
    * data and length
    */
-  inline std::span<const std::byte>
-  export_rdma(std::shared_ptr<Device> dev) {
+  inline std::span<const std::byte> export_rdma(Device &dev) {
     if (!mmap_) {
       throw MMapException(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
     }
     const void *export_desc;
     size_t export_desc_len;
-    doca_error_t result = doca_mmap_export_rdma(mmap_, dev->get(), &export_desc,
-                                                &export_desc_len);
+    doca_error_t result =
+        doca_mmap_export_rdma(mmap_, dev.get(), &export_desc, &export_desc_len);
     check_error(result, "export RDMA");
 
     // Copy the export descriptor to our own buffer
