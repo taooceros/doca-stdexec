@@ -20,24 +20,26 @@ struct Device : public std::enable_shared_from_this<Device> {
 
   Device(doca_dev *device) : device(device) {}
 
-  static auto open_from_pci(const char *pci_addr) {
-    return open_from_criteria([pci_addr](doca_devinfo *devinfo) {
+  static std::shared_ptr<Device> open_from_pci(const char *pci_addr) {
+    auto dev = open_from_criteria([pci_addr](doca_devinfo *devinfo) {
       char pci_addr_str[DOCA_DEVINFO_PCI_ADDR_SIZE];
       doca_devinfo_get_pci_addr_str(devinfo, pci_addr_str);
       return strcmp(pci_addr_str, pci_addr) == 0;
     });
+    return std::make_shared<Device>(dev);
   }
 
-  static auto open_from_ib_name(const char *ib_name) {
-    return open_from_criteria([ib_name](doca_devinfo *devinfo) {
+  static std::shared_ptr<Device> open_from_ib_name(const char *ib_name) {
+    auto dev = open_from_criteria([ib_name](doca_devinfo *devinfo) {
       char ib_name_str[DOCA_DEVINFO_IBDEV_NAME_SIZE];
       doca_devinfo_get_ibdev_name(devinfo, ib_name_str,
                                   DOCA_DEVINFO_IBDEV_NAME_SIZE);
       return strcmp(ib_name_str, ib_name) == 0;
     });
+    return std::make_shared<Device>(dev);
   }
 
-  static Device open_from_criteria(auto criteria) {
+  static doca_dev *open_from_criteria(auto criteria) {
     doca_dev *dev;
     doca_devinfo **devinfos;
     uint32_t num_devinfos;
@@ -52,7 +54,7 @@ struct Device : public std::enable_shared_from_this<Device> {
         auto status = doca_dev_open(devinfo, &dev);
         check_error(status, "Failed to open device from devinfo: %d\n");
         doca_devinfo_destroy_list(devinfos);
-        return Device(dev);
+        return dev;
       }
     }
 

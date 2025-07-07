@@ -17,22 +17,6 @@
 namespace doca_stdexec {
 
 /**
- * @brief Exception thrown when DOCA mmap operations fail
- */
-class MMapException : public std::runtime_error {
-public:
-  MMapException(doca_error_t error, const std::string &message)
-      : std::runtime_error(message + " (error: " +
-                           std::to_string(static_cast<int>(error)) + ")"),
-        error_code(error) {}
-
-  doca_error_t get_error_code() const noexcept { return error_code; }
-
-private:
-  doca_error_t error_code;
-};
-
-/**
  * @brief RAII wrapper for DOCA Memory Map functionality
  *
  * This class provides a modern C++ interface for DOCA mmap operations,
@@ -137,7 +121,7 @@ public:
    */
   inline void set_memrange(std::span<T> data) {
     if (!mmap_) {
-      throw MMapException(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
     }
     void *addr = static_cast<void *>(data.data());
     size_t len = data.size() * sizeof(T);
@@ -154,7 +138,7 @@ public:
   inline void set_dmabuf_memrange(int dmabuf_fd, std::span<T> data,
                                   size_t dmabuf_offset) {
     if (!mmap_) {
-      throw MMapException(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
     }
     void *addr = static_cast<void *>(data.data());
     size_t len = data.size() * sizeof(T);
@@ -172,7 +156,7 @@ public:
   inline void set_dpa_memrange(struct doca_dpa *dpa, uint64_t dpa_addr,
                                size_t count) {
     if (!mmap_) {
-      throw MMapException(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
     }
     size_t len = count * sizeof(T);
     doca_error_t result = doca_mmap_set_dpa_memrange(mmap_, dpa, dpa_addr, len);
@@ -185,7 +169,7 @@ public:
    */
   inline std::span<T> get_memrange() const {
     if (!mmap_) {
-      throw MMapException(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
     }
     void *addr;
     size_t len;
@@ -193,9 +177,8 @@ public:
     check_error(result, "get memory range");
 
     if (len % sizeof(T) != 0) {
-      throw MMapException(
-          DOCA_ERROR_INVALID_VALUE,
-          "Memory range size is not aligned to element type size");
+      check_error(DOCA_ERROR_INVALID_VALUE,
+                  "Memory range size is not aligned to element type size");
     }
 
     T *typed_addr = static_cast<T *>(addr);
@@ -210,7 +193,7 @@ public:
    */
   inline void add_device(std::shared_ptr<Device> dev) {
     if (!mmap_) {
-      throw MMapException(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
     }
     doca_error_t result = doca_mmap_add_dev(mmap_, dev->get());
     check_error(result, "add device");
@@ -223,7 +206,7 @@ public:
    */
   inline void remove_device(std::shared_ptr<Device> dev) {
     if (!mmap_) {
-      throw MMapException(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
     }
     doca_error_t result = doca_mmap_rm_dev(mmap_, dev->get());
     check_error(result, "remove device");
@@ -241,7 +224,7 @@ public:
    */
   inline void start() {
     if (!mmap_) {
-      throw MMapException(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
     }
     if (started_) {
       return; // Already started
@@ -256,7 +239,7 @@ public:
    */
   inline void stop() {
     if (!mmap_) {
-      throw MMapException(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
     }
     if (!started_) {
       return; // Already stopped
@@ -281,7 +264,7 @@ public:
   inline std::pair<std::unique_ptr<uint8_t[]>, size_t>
   export_pci(std::shared_ptr<Device> dev) {
     if (!mmap_) {
-      throw MMapException(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
     }
     const void *export_desc;
     size_t export_desc_len;
@@ -304,7 +287,7 @@ public:
    */
   inline std::span<const std::byte> export_rdma(Device &dev) {
     if (!mmap_) {
-      throw MMapException(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
     }
     const void *export_desc;
     size_t export_desc_len;
@@ -326,7 +309,7 @@ public:
    */
   inline doca_dpa_dev_mmap_t get_dpa_handle(std::shared_ptr<Device> dev) {
     if (!mmap_) {
-      throw MMapException(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
     }
     doca_dpa_dev_mmap_t handle;
     doca_error_t result =
@@ -342,7 +325,7 @@ public:
    */
   inline void set_permissions(uint32_t access_mask) {
     if (!mmap_) {
-      throw MMapException(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
     }
     doca_error_t result = doca_mmap_set_permissions(mmap_, access_mask);
     check_error(result, "set permissions");
@@ -354,7 +337,7 @@ public:
    */
   inline void set_max_devices(uint32_t max_devices) {
     if (!mmap_) {
-      throw MMapException(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
     }
     doca_error_t result = doca_mmap_set_max_num_devices(mmap_, max_devices);
     check_error(result, "set max devices");
@@ -366,7 +349,7 @@ public:
    */
   inline void set_user_data(union doca_data user_data) {
     if (!mmap_) {
-      throw MMapException(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
     }
     doca_error_t result = doca_mmap_set_user_data(mmap_, user_data);
     check_error(result, "set user data");
@@ -378,7 +361,7 @@ public:
    */
   inline void set_free_callback(FreeCallback callback) {
     if (!mmap_) {
-      throw MMapException(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
     }
     free_callback_ = std::make_unique<FreeCallback>(std::move(callback));
     doca_error_t result = doca_mmap_set_free_cb(mmap_, free_callback_wrapper,
@@ -392,7 +375,7 @@ public:
    */
   inline union doca_data get_user_data() const {
     if (!mmap_) {
-      throw MMapException(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
     }
     union doca_data user_data;
     doca_error_t result = doca_mmap_get_user_data(mmap_, &user_data);
@@ -405,7 +388,7 @@ public:
    */
   inline uint32_t get_max_devices() const {
     if (!mmap_) {
-      throw MMapException(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
     }
     uint32_t max_devices;
     doca_error_t result = doca_mmap_get_max_num_devices(mmap_, &max_devices);
@@ -418,7 +401,7 @@ public:
    */
   inline uint32_t get_num_buffers() const {
     if (!mmap_) {
-      throw MMapException(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid mmap");
     }
     uint32_t num_bufs;
     doca_error_t result = doca_mmap_get_num_bufs(mmap_, &num_bufs);
@@ -511,14 +494,6 @@ private:
   bool started_;
   std::unique_ptr<FreeCallback> free_callback_;
   std::vector<std::shared_ptr<Device>> devices_;
-
-  // Helper methods
-  inline void check_error(doca_error_t error,
-                          const std::string &operation) const {
-    if (error != DOCA_SUCCESS) {
-      throw MMapException(error, "Failed to " + operation);
-    }
-  }
 
   inline void cleanup() {
     if (mmap_) {

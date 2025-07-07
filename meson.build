@@ -15,7 +15,7 @@ doca_dependencies = [
     dependency('doca-sha'),
 ]
 
-inc = [include_directories('stdexec/include')]
+inc = [include_directories('stdexec/include'), include_directories('/usr/lib/gcc/x86_64-linux-gnu/12/include/')]
 
 app_dep = [
 ]

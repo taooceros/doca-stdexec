@@ -1,20 +1,23 @@
-
 #include "doca_stdexec/buf.hpp"
+#include "doca_stdexec/buf_inventory.hpp"
 #include "doca_stdexec/mmap.hpp"
-#include "stdexec/__detail/__execution_fwd.hpp"
-#include "stdexec/__detail/__start_detached.hpp"
-#include "stdexec/__detail/__sync_wait.hpp"
-#include "stdexec/__detail/__then.hpp"
+#include "stdexec/__detail/__let.hpp"
 #include <doca_stdexec/common/tcp.hpp>
 #include <doca_stdexec/device.hpp>
 #include <doca_stdexec/progress_engine.hpp>
 #include <doca_stdexec/rdma.hpp>
+#include <exec/repeat_n.hpp>
 #include <iostream>
+#include <optional>
 #include <stdexec/execution.hpp>
 #include <vector>
 
+#include <doca_log.h>
+
 using namespace doca_stdexec::tcp;
 using namespace doca_stdexec;
+
+using namespace stdexec;
 
 void client() {
 
@@ -22,53 +25,58 @@ void client() {
 
   auto device = doca_stdexec::Device::open_from_ib_name("mlx5_0");
 
-  auto rdma = doca_stdexec::rdma::Rdma::open_from_dev(device.get());
+  auto rdma = doca_stdexec::rdma::Rdma::open_from_dev(device);
 
-  context.get_pe().connect_ctx(*rdma);
-
-  rdma->start();
+  rdma->set_gid_index(0);
 
   tcp_socket socket;
   socket.connect("127.0.0.1", 12345);
 
-  printf("Client: Connected to server\n");  
+  printf("Client: Connected to server\n");
 
-  auto connection = rdma->connect(socket);
+  auto work =
+      context.connect_ctx(rdma) | stdexec::then([&]() { rdma->start(); }) |
+      stdexec::let_value([&]() { return rdma->connect(socket); }) |
+      stdexec::then([&](rdma::RdmaConnection &&connection) {
+        printf("Client: Connected to server rdma\n");
 
-  printf("Client: Connected to server rdma\n");
+        auto local_buf = std::vector<uint8_t>(1024);
 
-  auto local_buf = std::vector<uint8_t>(1024);
+        auto mmap = doca_stdexec::MMap<uint8_t>(std::span<uint8_t>(local_buf));
 
-  auto mmap = doca_stdexec::MMap<uint8_t>(std::span<uint8_t>(local_buf));
+        mmap.add_device(device);
+        mmap.set_permissions(DOCA_ACCESS_FLAG_LOCAL_READ_WRITE |
+                             DOCA_ACCESS_FLAG_PCI_READ_WRITE |
+                             DOCA_ACCESS_FLAG_RDMA_READ |
+                             DOCA_ACCESS_FLAG_RDMA_WRITE);
 
-  mmap.add_device(device.shared_from_this());
-  mmap.set_permissions(
-      DOCA_ACCESS_FLAG_LOCAL_READ_WRITE | DOCA_ACCESS_FLAG_PCI_READ_WRITE |
-      DOCA_ACCESS_FLAG_RDMA_READ | DOCA_ACCESS_FLAG_RDMA_WRITE);
+        printf("client mmap %p %zu\n", mmap.get_memrange().data(),
+               mmap.get_memrange().size_bytes());
 
-  auto export_desc = mmap.export_rdma(device);
+        mmap.start();
 
-  printf("Client: Sending export desc\n");
+        auto export_desc = mmap.export_rdma(*device);
 
-  socket.send_dynamic(export_desc);
+        printf("Client: Sending export desc\n");
 
-  printf("Client: Received message\n");
+        socket.send_dynamic(export_desc);
 
-  auto received_message = socket.receive_dynamic_string();
+        auto received_message = socket.receive_dynamic_string();
 
-  printf("Client: Received message\n");
+        if (received_message == "1") {
+          std::cout << "Client: received message" << std::endl;
+        } else {
+          std::cout << "Client: unexpected message: " << received_message
+                    << std::endl;
+          exit(1);
+        }
 
-  if (received_message == "1") {
-    std::cout << "Client: received message" << std::endl;
-  } else {
-    std::cout << "Client: unexpected message: " << received_message
-              << std::endl;
-    exit(1);
-  }
+        for (auto i : local_buf) {
+          printf("%d ", i);
+        }
+      });
 
-  for (auto i : local_buf) {
-    printf("%d ", i);
-  }
+  stdexec::sync_wait(std::move(work));
 }
 
 void server() {
@@ -84,61 +92,85 @@ void server() {
 
   auto device = doca_stdexec::Device::open_from_ib_name("mlx5_0");
 
-  auto rdma = doca_stdexec::rdma::Rdma::open_from_dev(device.get());
+  auto rdma = doca_stdexec::rdma::Rdma::open_from_dev(device);
 
-  context.get_pe().connect_ctx(*rdma);
+  rdma->set_gid_index(0);
 
-  rdma->start();
+  std::optional<doca_stdexec::rdma::RdmaConnection> connection;
+  std::optional<doca_stdexec::BufInventory> buf_inventory;
 
-  auto connection = rdma->connect(socket);
+  std::optional<doca_stdexec::MMap<uint8_t>> src_mmap;
+  std::optional<doca_stdexec::MMap<uint8_t>> dst_mmap;
 
-  printf("Server: Connected to client rdma\n");
+  std::optional<doca_stdexec::Buf> src_buf;
+  std::optional<doca_stdexec::Buf> dst_buf;
 
-  auto buffer = std::vector<uint8_t>(1024);
+  auto work =
+      context.connect_ctx(rdma) | stdexec::then([&]() { rdma->start(); }) |
+      stdexec::let_value([&]() {
+        printf("Server: Connecting to client rdma\n");
+        return rdma->connect(socket);
+      }) |
+      stdexec::let_value([&](auto &connection_) {
+        connection = std::move(connection_);
 
-  auto mmap = doca_stdexec::MMap<uint8_t>(std::span<uint8_t>(buffer));
+        printf("Server: Connected to client rdma\n");
 
-  mmap.add_device(device.shared_from_this());
-  mmap.set_permissions(
-      DOCA_ACCESS_FLAG_LOCAL_READ_WRITE | DOCA_ACCESS_FLAG_PCI_READ_WRITE |
-      DOCA_ACCESS_FLAG_RDMA_READ | DOCA_ACCESS_FLAG_RDMA_WRITE);
+        auto buffer = std::vector<uint8_t>(64);
 
-  mmap.start();
+        for (size_t i = 0; i < buffer.size(); i++) {
+          buffer[i] = i;
+        }
 
-  // auto export_desc = mmap.export_rdma(device);
+        src_mmap = doca_stdexec::MMap<uint8_t>(std::span<uint8_t>(buffer));
 
-  printf("Server: Sending export desc\n");
+        src_mmap->add_device(device);
+        src_mmap->set_permissions(DOCA_ACCESS_FLAG_LOCAL_READ_WRITE |
+                                  DOCA_ACCESS_FLAG_PCI_READ_WRITE |
+                                  DOCA_ACCESS_FLAG_RDMA_READ |
+                                  DOCA_ACCESS_FLAG_RDMA_WRITE);
 
-  doca_data user_data;
-  user_data.u64 = 0;
+        src_mmap->start();
 
-  // socket.send_dynamic(export_desc);
-  auto received_ctx = socket.receive_dynamic();
+        // auto export_desc = mmap.export_rdma(device);
 
-  printf("Server: Received export desc\n");
+        printf("Server: Sending export desc\n");
 
-  auto mmap2 = doca_stdexec::MMap<uint8_t>::create_from_export(
-      &user_data, received_ctx.data(), received_ctx.size(),
-      device.shared_from_this());
+        doca_data user_data;
 
-  mmap2.start();
+        // socket.send_dynamic(export_desc);
+        auto received_ctx = socket.receive_dynamic();
 
-  printf("Server: Mapped export desc\n");
+        printf("Server: Received export desc\n");
 
-  auto buf1 = Buf();
-  auto buf2 = Buf();
+        dst_mmap = doca_stdexec::MMap<uint8_t>::create_from_export(
+            &user_data, received_ctx.data(), received_ctx.size(), device);
 
-  auto scheduler = context.get_scheduler();
+        dst_mmap->start();
 
-  auto sender = scheduler.schedule() |
-                stdexec::then([&]() { connection.write(buf1, buf2); });
+        printf("Server: Mapped export desc\n");
 
-  auto result = stdexec::sync_wait(std::move(sender));
+        buf_inventory = doca_stdexec::BufInventory(16);
 
-  socket.send("1");
+        src_buf = buf_inventory->get_buffer_by_data(*src_mmap, buffer.data(),
+                                                    buffer.size());
+
+        dst_buf = buf_inventory->get_buffer_for_mmap(*dst_mmap);
+
+        auto work = exec::repeat_n(connection->write(*src_buf, *dst_buf), 10);
+
+        return work;
+      });
+
+  stdexec::sync_wait(std::move(work));
 }
 
 int main() {
+  doca_log_backend *backend;
+  auto status = doca_log_backend_create_with_fd_sdk(fileno(stdout), &backend);
+  check_error(status, "Failed to create log backend");
+  status = doca_log_backend_set_sdk_level(backend, DOCA_LOG_LEVEL_TRACE);
+  check_error(status, "Failed to set default log backend");
 
   std::thread server_thread(server);
   std::thread client_thread(client);

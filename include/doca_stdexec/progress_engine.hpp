@@ -2,6 +2,7 @@
 #ifndef DOCA_STDEXEC_PE_HPP
 #define DOCA_STDEXEC_PE_HPP
 
+#include <cstdint>
 #include "doca_stdexec/context.hpp"
 #include "operation.hpp"
 #include <doca_pe.h>
@@ -11,7 +12,11 @@
 namespace doca_stdexec {
 
 struct doca_pe_deleter {
-  void operator()(doca_pe *pe) { doca_pe_destroy(pe); }
+  void operator()(doca_pe *pe) {
+    printf("Destroying pe\n");
+    auto status = doca_pe_destroy(pe);
+    check_error(status, "Failed to destroy pe");
+  }
 };
 
 class ProgressEngine {
@@ -20,17 +25,20 @@ public:
   ProgressEngine(ProgressEngine &&) = default;
   ProgressEngine() {
     doca_pe *pe;
-    doca_pe_create(&pe);
+    auto status = doca_pe_create(&pe);
+    check_error(status, "Failed to create pe");
     pe_ = std::unique_ptr<doca_pe, doca_pe_deleter>(pe);
   }
   ~ProgressEngine() = default;
 
-  doca_error connect_ctx(Context &ctx) {
+  auto connect_ctx(Context &ctx) {
     auto ctx_ptr = ctx.as_ctx();
     return doca_pe_connect_ctx(pe_.get(), ctx_ptr);
   }
 
-  doca_pe *get() const noexcept { return pe_.get(); }
+  doca_pe *get() noexcept { return pe_.get(); }
+
+  uint8_t progress() { return doca_pe_progress(pe_.get()); }
 
 private:
   std::unique_ptr<doca_pe, doca_pe_deleter> pe_;
@@ -171,9 +179,18 @@ public:
     }
   };
 
-  doca_pe_run_loop(doca_pe *pe) noexcept : pe(pe) {}
+  doca_pe_run_loop(ProgressEngine pe) noexcept : pe(std::move(pe)) {}
 
   auto get_scheduler() noexcept -> scheduler { return scheduler{this}; }
+
+  auto connect_ctx(std::shared_ptr<Context> ctx) {
+    return stdexec::starts_on(
+        get_scheduler(), stdexec::just(ctx) | stdexec::then([&](auto ctx) {
+                           auto status =
+                               doca_pe_connect_ctx(pe.get(), ctx->as_ctx());
+                           check_error(status, "Failed to connect ctx");
+                         }));
+  }
 
   void run();
 
@@ -181,13 +198,15 @@ public:
 
   void finish();
 
+public:
+  ProgressEngine pe;
+
 private:
   void push_back_(task *task);
   auto pop_front_() -> task *;
 
   std::mutex mutex_;
   std::condition_variable cv_;
-  doca_pe *pe;
   task head{{}, &head, {&head}};
   bool stop_ = false;
 };
@@ -205,16 +224,16 @@ inline void operation<ReceiverId>::t::start() & noexcept {
 inline void doca_pe_run_loop::run() {
   while (!stop_) {
     run_some();
-    auto num_progressed = doca_pe_progress(pe);
-    while (num_progressed) {
-      doca_pe_progress(pe);
+    while (pe.progress()) {
     }
   }
 }
 
 inline void doca_pe_run_loop::run_some() {
   for (task *task; (task = pop_front_()) != &head;) {
+    printf("Executing task\n");
     task->execute();
+    printf("Executed task\n");
   }
 }
 
@@ -238,20 +257,22 @@ inline auto doca_pe_run_loop::pop_front_() -> task * {
 using run_loop = loop::doca_pe_run_loop;
 
 class doca_pe_context {
-  ProgressEngine pe_;
-  run_loop *loop_;
+  run_loop loop_;
   std::thread thread_;
 
 public:
   doca_pe_context(ProgressEngine pe) noexcept
-      : pe_(std::move(pe)), loop_(new run_loop(pe_.get())),
-        thread_([this]() { loop_->run(); }) {}
+      : loop_(std::move(pe)), thread_([this]() { loop_.run(); }) {}
 
   doca_pe_context() : doca_pe_context(ProgressEngine{}) {}
 
-  auto &get_pe() noexcept { return pe_; }
+  auto &get_pe() noexcept { return loop_.pe; }
 
-  auto get_scheduler() const noexcept { return loop_->get_scheduler(); }
+  auto get_scheduler() noexcept { return loop_.get_scheduler(); }
+
+  auto connect_ctx(std::shared_ptr<Context> ctx) {
+    return loop_.connect_ctx(ctx);
+  }
 
   void join() { thread_.join(); }
 };

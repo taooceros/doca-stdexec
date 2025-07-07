@@ -41,7 +41,7 @@ private:
 
   static void check_error(doca_error_t result, const std::string &operation) {
     if (result != DOCA_SUCCESS) {
-      throw BufException(result, "Failed to " + operation);
+      check_error(result, "Failed to " + operation);
     }
   }
 
@@ -139,7 +139,7 @@ public:
    */
   uint16_t get_refcount() const {
     if (!buf_) {
-      throw BufException(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
     }
     uint16_t refcount;
     doca_error_t result = doca_buf_get_refcount(buf_, &refcount);
@@ -152,7 +152,7 @@ public:
    */
   uint16_t inc_refcount() {
     if (!buf_) {
-      throw BufException(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
     }
     uint16_t refcount;
     doca_error_t result = doca_buf_inc_refcount(buf_, &refcount);
@@ -165,7 +165,7 @@ public:
    */
   uint16_t dec_refcount() {
     if (!buf_) {
-      throw BufException(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
     }
     uint16_t refcount;
     doca_error_t result = doca_buf_dec_refcount(buf_, &refcount);
@@ -180,7 +180,7 @@ public:
    */
   size_t get_len() const {
     if (!buf_) {
-      throw BufException(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
     }
     size_t len;
     doca_error_t result = doca_buf_get_len(buf_, &len);
@@ -193,7 +193,7 @@ public:
    */
   void *get_head() const {
     if (!buf_) {
-      throw BufException(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
     }
     void *head;
     doca_error_t result = doca_buf_get_head(buf_, &head);
@@ -213,7 +213,7 @@ public:
    */
   size_t get_data_len() const {
     if (!buf_) {
-      throw BufException(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
     }
     size_t data_len;
     doca_error_t result = doca_buf_get_data_len(buf_, &data_len);
@@ -226,7 +226,7 @@ public:
    */
   void *get_data() const {
     if (!buf_) {
-      throw BufException(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
     }
     void *data;
     doca_error_t result = doca_buf_get_data(buf_, &data);
@@ -257,8 +257,8 @@ public:
     T *data = get_data_as<T>();
     size_t len = get_data_len();
     if (len % sizeof(T) != 0) {
-      throw BufException(DOCA_ERROR_INVALID_VALUE,
-                         "Data length not aligned to element type size");
+      check_error(DOCA_ERROR_INVALID_VALUE,
+                  "Data length not aligned to element type size");
     }
     return std::span<T>(data, len / sizeof(T));
   }
@@ -270,7 +270,7 @@ public:
    */
   void set_data(void *data, size_t data_len) {
     if (!buf_) {
-      throw BufException(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
     }
     doca_error_t result = doca_buf_set_data(buf_, data, data_len);
     check_error(result, "set data");
@@ -290,7 +290,7 @@ public:
    */
   void set_data_len(size_t data_len) {
     if (!buf_) {
-      throw BufException(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
     }
     doca_error_t result = doca_buf_set_data_len(buf_, data_len);
     check_error(result, "set data length");
@@ -301,7 +301,7 @@ public:
    */
   void reset_data_len() {
     if (!buf_) {
-      throw BufException(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
     }
     doca_error_t result = doca_buf_reset_data_len(buf_);
     check_error(result, "reset data length");
@@ -316,7 +316,7 @@ public:
    */
   bool get_next_in_list(Buf &next_buf) const {
     if (!buf_) {
-      throw BufException(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
     }
     struct doca_buf *next_doca_buf;
     doca_error_t result = doca_buf_get_next_in_list(buf_, &next_doca_buf);
@@ -345,7 +345,7 @@ public:
    */
   Buf get_last_in_list() const {
     if (!buf_) {
-      throw BufException(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
     }
     struct doca_buf *last_buf;
     doca_error_t result = doca_buf_get_last_in_list(buf_, &last_buf);
@@ -358,7 +358,7 @@ public:
    */
   bool is_last_in_list() const {
     if (!buf_) {
-      throw BufException(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
     }
     uint8_t is_last;
     doca_error_t result = doca_buf_is_last_in_list(buf_, &is_last);
@@ -371,7 +371,7 @@ public:
    */
   bool is_first_in_list() const {
     if (!buf_) {
-      throw BufException(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
     }
     uint8_t is_first;
     doca_error_t result = doca_buf_is_first_in_list(buf_, &is_first);
@@ -384,7 +384,7 @@ public:
    */
   bool is_in_list() const {
     if (!buf_) {
-      throw BufException(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
     }
     uint8_t is_in_list;
     doca_error_t result = doca_buf_is_in_list(buf_, &is_in_list);
@@ -397,7 +397,7 @@ public:
    */
   uint32_t get_list_len() const {
     if (!buf_) {
-      throw BufException(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
     }
     uint32_t num_elements;
     doca_error_t result = doca_buf_get_list_len(buf_, &num_elements);
@@ -412,7 +412,7 @@ public:
    */
   void chain_list(Buf &other) {
     if (!buf_ || !other.buf_) {
-      throw BufException(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
     }
     doca_error_t result = doca_buf_chain_list(buf_, other.buf_);
     check_error(result, "chain lists");
@@ -423,7 +423,7 @@ public:
    */
   void chain_list_tail(Buf &tail, Buf &other) {
     if (!buf_ || !tail.buf_ || !other.buf_) {
-      throw BufException(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
     }
     doca_error_t result = doca_buf_chain_list_tail(buf_, tail.buf_, other.buf_);
     check_error(result, "chain lists with tail");
@@ -434,7 +434,7 @@ public:
    */
   void unchain_list(Buf &split_point) {
     if (!buf_ || !split_point.buf_) {
-      throw BufException(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
+      check_error(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
     }
     doca_error_t result = doca_buf_unchain_list(buf_, split_point.buf_);
     check_error(result, "unchain list");

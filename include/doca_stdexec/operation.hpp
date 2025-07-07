@@ -9,10 +9,7 @@ namespace doca_stdexec {
 
 struct immovable {
   immovable() = default;
-  immovable(immovable &&) = delete;
-  immovable &operator=(immovable &&) = delete;
-  immovable(const immovable &) = delete;
-  immovable &operator=(const immovable &) = delete;
+  immovable(immovable&&) = delete;
 };
 
 } // namespace doca_stdexec

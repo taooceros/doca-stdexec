@@ -33,6 +33,8 @@ public:
     return RdmaSendTask(task);
   }
 
+  doca_task *as_task() { return doca_rdma_task_send_as_task(task); }
+
   void submit() {
     auto err = doca_task_submit(doca_rdma_task_send_as_task(task));
     if (err != DOCA_SUCCESS) {
@@ -46,9 +48,9 @@ private:
   doca_rdma_task_send *task;
 };
 
-inline auto RdmaConnection::send(Buf &buf) {
-  auto task = RdmaSendTask::allocate(rdma->get(), connection, buf.get());
-  auto sender = rdma::task::rdma_sender<RdmaSendTask>{std::move(task)};
+inline auto RdmaConnection::send(Buf buf) {
+  auto sender = rdma::task::rdma_sender<RdmaSendTask>{
+      rdma->get(), connection.get(), buf.get()};
   return sender;
 }
 
@@ -73,6 +75,8 @@ public:
 
     return RdmaRecvTask(task);
   }
+
+  doca_task *as_task() { return doca_rdma_task_receive_as_task(task); }
 
   void submit() {
     auto err = doca_task_submit(doca_rdma_task_receive_as_task(task));
@@ -123,8 +127,8 @@ struct RdmaRecvSender {
 
 inline auto Rdma::recv(Buf &buf) {
   auto task = RdmaRecvTask::allocate(rdma.get(), buf.get());
-  auto sender = rdma::task::rdma_sender<RdmaRecvTask>{std::move(task)};
-  return sender;
+  // auto sender = rdma::task::rdma_sender<RdmaRecvTask>{std::move(task)};
+  return stdexec::just(1);
 }
 
 } // namespace doca_stdexec::rdma
