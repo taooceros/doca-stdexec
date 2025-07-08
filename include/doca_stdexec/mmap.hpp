@@ -35,7 +35,7 @@ public:
   inline MMap() : mmap_(nullptr), started_(false) {
     doca_error_t result = doca_mmap_create(&mmap_);
     check_error(result, "create mmap");
-    set_max_devices(8);
+    set_max_devices(1);
   }
 
   /**
@@ -56,6 +56,7 @@ public:
       : mmap_(nullptr), started_(false) {
     doca_error_t result = doca_mmap_create_from_export(
         user_data, export_desc, export_desc_len, dev->get(), &mmap_);
+    devices_.push_back(dev);
     check_error(result, "create mmap from export");
     started_ = true; // mmap created from export is automatically started
   }

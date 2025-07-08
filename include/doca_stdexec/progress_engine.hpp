@@ -1,10 +1,11 @@
 #pragma once
+#include <memory>
 #ifndef DOCA_STDEXEC_PE_HPP
 #define DOCA_STDEXEC_PE_HPP
 
-#include <cstdint>
 #include "doca_stdexec/context.hpp"
 #include "operation.hpp"
+#include <cstdint>
 #include <doca_pe.h>
 #include <stdexec/execution.hpp>
 #include <thread>
@@ -31,8 +32,9 @@ public:
   }
   ~ProgressEngine() = default;
 
-  auto connect_ctx(Context &ctx) {
-    auto ctx_ptr = ctx.as_ctx();
+  auto connect_ctx(std::shared_ptr<Context> ctx) {
+    auto ctx_ptr = ctx->as_ctx();
+    ctxs_.emplace_back(std::move(ctx));
     return doca_pe_connect_ctx(pe_.get(), ctx_ptr);
   }
 
@@ -42,6 +44,7 @@ public:
 
 private:
   std::unique_ptr<doca_pe, doca_pe_deleter> pe_;
+  std::vector<std::shared_ptr<Context>> ctxs_;
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -183,14 +186,7 @@ public:
 
   auto get_scheduler() noexcept -> scheduler { return scheduler{this}; }
 
-  auto connect_ctx(std::shared_ptr<Context> ctx) {
-    return stdexec::starts_on(
-        get_scheduler(), stdexec::just(ctx) | stdexec::then([&](auto ctx) {
-                           auto status =
-                               doca_pe_connect_ctx(pe.get(), ctx->as_ctx());
-                           check_error(status, "Failed to connect ctx");
-                         }));
-  }
+  auto connect_ctx(std::shared_ptr<Context> ctx) { pe.connect_ctx(ctx); }
 
   void run();
 

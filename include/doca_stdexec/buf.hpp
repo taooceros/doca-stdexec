@@ -1,4 +1,5 @@
 #pragma once
+#include "doca_stdexec/common.hpp"
 #ifndef DOCA_STDEXEC_BUF_HPP
 #define DOCA_STDEXEC_BUF_HPP
 
@@ -38,12 +39,6 @@ private:
 class Buf {
 private:
   struct doca_buf *buf_;
-
-  static void check_error(doca_error_t result, const std::string &operation) {
-    if (result != DOCA_SUCCESS) {
-      check_error(result, "Failed to " + operation);
-    }
-  }
 
 public:
   /**
@@ -470,7 +465,12 @@ private:
   void cleanup() {
     if (buf_) {
       uint16_t refcount;
-      doca_buf_dec_refcount(buf_, &refcount);
+      auto err = doca_buf_dec_refcount(buf_, &refcount);
+      printf("Decrementing buf refcount %d\n", refcount);
+      check_error(err, "Failed to decrement buf refcount");
+      if (refcount == 1) {
+        printf("Destroying buf\n");
+      }
     }
     buf_ = nullptr;
   }

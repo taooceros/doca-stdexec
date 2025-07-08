@@ -122,8 +122,11 @@ public:
   template <typename T>
   Buf get_buffer_by_addr(const MMap<T> &mmap, void *addr, size_t len) {
     struct doca_buf *buf;
-    auto err = doca_buf_inventory_buf_get_by_addr(inventory_, mmap.get(), addr, len, &buf);
-    check_error(err, "Failed to get buffer by address (addr=%p, len=%zu)", addr, len);
+    auto err = doca_buf_inventory_buf_get_by_addr(inventory_, mmap.get(), addr,
+                                                  len, &buf);
+    check_error(err, "Failed to get buffer by address (addr=%p, len=%zu)", addr,
+                len);
+    printf("get_buffer_by_addr: buf %p\n", buf);
     return Buf(buf);
   }
 
@@ -138,8 +141,10 @@ public:
   template <typename T>
   Buf get_buffer_by_data(const MMap<T> &mmap, void *data, size_t data_len) {
     struct doca_buf *buf;
-    auto err = doca_buf_inventory_buf_get_by_data(inventory_, mmap.get(), data, data_len, &buf);
-    check_error(err, "Failed to get buffer by data (data=%p, data_len=%zu)", data, data_len);
+    auto err = doca_buf_inventory_buf_get_by_data(inventory_, mmap.get(), data,
+                                                  data_len, &buf);
+    check_error(err, "Failed to get buffer by data (data=%p, data_len=%zu)",
+                data, data_len);
     return Buf(buf);
   }
 
@@ -157,8 +162,8 @@ public:
   Buf get_buffer_by_args(const MMap<T> &mmap, void *addr, size_t len,
                          void *data, size_t data_len) {
     struct doca_buf *buf;
-    auto err = doca_buf_inventory_buf_get_by_args(inventory_, mmap.get(), addr, len,
-                                                  data, data_len, &buf);
+    auto err = doca_buf_inventory_buf_get_by_args(inventory_, mmap.get(), addr,
+                                                  len, data, data_len, &buf);
     check_error(err,
                 "Failed to get buffer by args (addr=%p, len=%zu, data=%p, "
                 "data_len=%zu)",
@@ -185,8 +190,7 @@ public:
    * @param mmap DOCA memory map structure (must be started)
    * @return Buf object wrapping the allocated buffer
    */
-  template <typename T>
-  Buf get_buffer_for_mmap(const MMap<T> &mmap) {
+  template <typename T> Buf get_buffer_for_mmap(const MMap<T> &mmap) {
     auto span = mmap.get_memrange();
     return get_buffer_by_addr(mmap, span.data(), span.size_bytes());
   }

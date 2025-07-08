@@ -14,9 +14,7 @@ inline void check_error(doca_error_t err, const char *msg, Args... args) {
   std::unique_lock lock(mutex);
 
   if (err != DOCA_SUCCESS) {
-#ifdef __SANITIZE_ADDRESS__
     __sanitizer_print_stack_trace();
-#endif
     printf(msg, args...);
     printf(". Error: %s [%d] (%s)\n", doca_error_get_name(err), err,
            doca_error_get_descr(err));

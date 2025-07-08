@@ -18,7 +18,6 @@ namespace doca_stdexec::rdma::task {
 
 template <typename T>
 concept DocaTask = requires(T t) {
-  { t.submit() } -> std::same_as<void>;
   { t.as_task() } -> std::same_as<doca_task *>;
 };
 
@@ -49,7 +48,8 @@ struct rdma_operation : immovable {
 
   void start() noexcept {
     doca_task_set_user_data(task.as_task(), doca_data{.ptr = this});
-    task.submit();
+    auto status = doca_task_submit(task.as_task());
+    check_error(status, "Failed to submit task");
   }
   DocaTask task;
   Receiver receiver;
@@ -70,8 +70,7 @@ inline void rdma_operation_set_error(typename TaskType::raw_type *raw_task,
   auto task = TaskType{raw_task};
   auto error = doca_task_get_status(task.as_task());
 
-  task.~TaskType();
-  printf("\n", &task);
+  printf("\n task: %p\n", &task);
 
   op->set_error_callback(op, error);
 }
@@ -85,7 +84,7 @@ inline void rdma_operation_set_stopped(typename TaskType::raw_type *raw_task,
   op->set_stopped_callback(op);
 }
 
-template <typename Task> struct rdma_sender {
+template <typename Task, typename... Buffers> struct rdma_sender {
 
   using sender_concept = stdexec::sender_t;
 
@@ -96,14 +95,18 @@ template <typename Task> struct rdma_sender {
   stdexec::env<> get_env() { return {}; }
 
   template <stdexec::receiver Receiver> auto connect(Receiver rcvr) {
-    auto task = Task::allocate(rdma, connection, src, dst);
-    return rdma_operation<Receiver, Task>{std::move(task), std::move(rcvr)};
+    return std::apply(
+        [&](auto &...buffers) {
+          auto task = Task::allocate(rdma, connection, buffers...);
+          return rdma_operation<Receiver, Task>{std::move(task),
+                                                std::move(rcvr)};
+        },
+        buffers);
   }
 
   doca_rdma *rdma;
   doca_rdma_connection *connection;
-  doca_buf *src;
-  doca_buf *dst;
+  std::tuple<Buffers...> buffers;
 };
 
 } // namespace doca_stdexec::rdma::task

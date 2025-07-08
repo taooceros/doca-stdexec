@@ -12,7 +12,10 @@
 namespace doca_stdexec {
 
 struct doca_dev_deleter {
-  void operator()(doca_dev *dev) { doca_dev_close(dev); }
+  void operator()(doca_dev *dev) {
+    printf("Destroying device\n");
+    doca_dev_close(dev);
+  }
 };
 
 struct Device : public std::enable_shared_from_this<Device> {

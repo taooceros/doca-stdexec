@@ -22,7 +22,10 @@
 namespace doca_stdexec::rdma {
 
 struct doca_rdma_deleter {
-  void operator()(doca_rdma *rdma) { doca_rdma_destroy(rdma); }
+  void operator()(doca_rdma *rdma) {
+    printf("Destroying rdma\n");
+    doca_rdma_destroy(rdma);
+  }
 };
 
 struct RdmaConnection;
@@ -45,7 +48,6 @@ struct Rdma : public std::enable_shared_from_this<Rdma>, public Context {
     check_error(status, "Failed to create rdma");
 
     doca_rdma_set_permissions(rdma, DOCA_ACCESS_FLAG_LOCAL_READ_WRITE |
-                                        DOCA_ACCESS_FLAG_PCI_READ_WRITE |
                                         DOCA_ACCESS_FLAG_RDMA_READ |
                                         DOCA_ACCESS_FLAG_RDMA_WRITE);
 
@@ -55,10 +57,12 @@ struct Rdma : public std::enable_shared_from_this<Rdma>, public Context {
   void set_conf() {
     set_write_conf(16);
     set_read_conf(16);
+    set_send_conf(16);
   }
 
   void set_write_conf(uint32_t num_tasks);
   void set_read_conf(uint32_t num_tasks);
+  void set_send_conf(uint32_t num_tasks);
 
   void set_gid_index(uint32_t gid_index) {
     auto status = doca_rdma_set_gid_index(rdma.get(), gid_index);
@@ -269,16 +273,24 @@ namespace doca_stdexec::rdma {
 inline void Rdma::set_write_conf(uint32_t num_tasks) {
   auto status = doca_rdma_task_write_set_conf(
       rdma.get(), task::rdma_operation_set_value<RdmaWriteTask>,
-      task::rdma_operation_set_error<RdmaWriteTask>, 16);
+      task::rdma_operation_set_error<RdmaWriteTask>, num_tasks);
   check_error(status, "Failed to set write conf");
 }
 
 inline void Rdma::set_read_conf(uint32_t num_tasks) {
   auto status = doca_rdma_task_read_set_conf(
       rdma.get(), task::rdma_operation_set_value<RdmaReadTask>,
-      task::rdma_operation_set_error<RdmaReadTask>, 16);
+      task::rdma_operation_set_error<RdmaReadTask>, num_tasks);
   check_error(status, "Failed to set read conf");
 }
+
+inline void Rdma::set_send_conf(uint32_t num_tasks) {
+  auto status = doca_rdma_task_send_set_conf(
+      rdma.get(), task::rdma_operation_set_value<RdmaSendTask>,
+      task::rdma_operation_set_error<RdmaSendTask>, num_tasks);
+  check_error(status, "Failed to set send conf");
+}
+
 } // namespace doca_stdexec::rdma
 
 #endif // DOCA_STDEXEC_RDMA_HPP

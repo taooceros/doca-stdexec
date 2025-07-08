@@ -13,6 +13,7 @@ namespace doca_stdexec::rdma {
 
 struct rdma_write_deleter {
   void operator()(doca_rdma_task_write *task) {
+    printf("Destroying write task\n");
     doca_task_free(doca_rdma_task_write_as_task(task));
   }
 };
@@ -28,10 +29,38 @@ public:
   static RdmaWriteTask allocate(doca_rdma *rdma, doca_rdma_connection *conn,
                                 doca_buf *src, doca_buf *dst) {
 
+    doca_error status;
+
+    void *src_head;
+    void *src_data;
+    size_t src_data_len;
+    status = doca_buf_get_head(src, &src_head);
+    check_error(status, "Failed to get src head");
+    status = doca_buf_get_data(src, &src_data);
+    check_error(status, "Failed to get src data");
+    status = doca_buf_get_data_len(src, &src_data_len);
+    check_error(status, "Failed to get src data len");
+
+    printf("src buf head %p, data %p,%zu\n", src_head, src_data, src_data_len);
+
+    void *dst_head;
+    void *dst_data;
+    size_t dst_data_len;
+    status = doca_buf_get_head(dst, &dst_head);
+    check_error(status, "Failed to get dst head");
+    status = doca_buf_get_data(dst, &dst_data);
+    check_error(status, "Failed to get dst data");
+    status = doca_buf_get_data_len(dst, &dst_data_len);
+    check_error(status, "Failed to get dst data len");
+    printf("dst buf head %p, data %p,%zu\n", dst_head, dst_data, dst_data_len);
+
     union doca_data user_data;
     user_data.u64 = 0;
 
     doca_rdma_task_write *task = nullptr;
+
+    printf("Allocating write task: rdma %p, conn %p, src %p, dst %p\n", rdma,
+           conn, src, dst);
 
     auto err = doca_rdma_task_write_allocate_init(rdma, conn, src, dst,
                                                   user_data, &task);
@@ -46,9 +75,7 @@ public:
 
   void submit() {
     auto err = doca_task_submit(doca_rdma_task_write_as_task(task.get()));
-    if (err != DOCA_SUCCESS) {
-      throw std::runtime_error("Failed to submit write task");
-    }
+    check_error(err, "Failed to submit write task");
   }
 
 private:
@@ -56,8 +83,8 @@ private:
 };
 
 inline auto RdmaConnection::write(Buf src, Buf dst) {
-  auto sender = rdma::task::rdma_sender<RdmaWriteTask>{
-      rdma->get(), connection.get(), src.get(), dst.get()};
+  auto sender = rdma::task::rdma_sender<RdmaWriteTask, doca_buf *, doca_buf *>{
+      rdma->get(), connection.get(), std::make_tuple(src.get(), dst.get())};
   return sender;
 }
 
@@ -67,15 +94,15 @@ struct RdmaReadTask {
   RdmaReadTask(doca_rdma_task_read *task) : task(task) {}
 
   static RdmaReadTask allocate(doca_rdma *rdma, doca_rdma_connection *conn,
-                               Buf &src, Buf &dst) {
+                               doca_buf *src, doca_buf *dst) {
 
     union doca_data user_data;
     user_data.u64 = 0;
 
     doca_rdma_task_read *task = nullptr;
 
-    auto err = doca_rdma_task_read_allocate_init(rdma, conn, src.get(),
-                                                 dst.get(), user_data, &task);
+    auto err = doca_rdma_task_read_allocate_init(rdma, conn, src, dst,
+                                                 user_data, &task);
     if (err != DOCA_SUCCESS) {
       throw std::runtime_error("Failed to allocate read task");
     }
@@ -87,9 +114,7 @@ struct RdmaReadTask {
 
   void submit() {
     auto err = doca_task_submit(doca_rdma_task_read_as_task(task));
-    if (err != DOCA_SUCCESS) {
-      throw std::runtime_error("Failed to submit read task");
-    }
+    check_error(err, "Failed to submit read task");
   }
 
   ~RdmaReadTask() { doca_task_free(doca_rdma_task_read_as_task(task)); }
@@ -99,8 +124,8 @@ private:
 };
 
 inline auto RdmaConnection::read(Buf src, Buf dst) {
-  auto sender = rdma::task::rdma_sender<RdmaReadTask>{
-      rdma->get(), connection.get(), src.get(), dst.get()};
+  auto sender = rdma::task::rdma_sender<RdmaReadTask, doca_buf *, doca_buf *>{
+      rdma->get(), connection.get(), std::make_tuple(src.get(), dst.get())};
   return sender;
 }
 

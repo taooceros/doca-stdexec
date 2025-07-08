@@ -10,11 +10,19 @@
 
 namespace doca_stdexec::rdma {
 
+struct rdma_send_deleter {
+  void operator()(doca_rdma_task_send *task) {
+    doca_task_free(doca_rdma_task_send_as_task(task));
+  }
+};
+
 struct RdmaSendTask {
   using raw_type = doca_rdma_task_send;
 
 public:
-  RdmaSendTask(doca_rdma_task_send *task);
+  RdmaSendTask(doca_rdma_task_send *task) : task(task) {}
+
+  RdmaSendTask(RdmaSendTask &&other) = default;
 
   static RdmaSendTask allocate(doca_rdma *rdma, doca_rdma_connection *conn,
                                doca_buf *buf) {
@@ -26,6 +34,7 @@ public:
 
     auto err =
         doca_rdma_task_send_allocate_init(rdma, conn, buf, user_data, &task);
+    printf("allocated send task %p\n", task);
     if (err != DOCA_SUCCESS) {
       throw std::runtime_error("Failed to allocate send task");
     }
@@ -33,24 +42,24 @@ public:
     return RdmaSendTask(task);
   }
 
-  doca_task *as_task() { return doca_rdma_task_send_as_task(task); }
+  doca_task *as_task() { return doca_rdma_task_send_as_task(task.get()); }
 
   void submit() {
-    auto err = doca_task_submit(doca_rdma_task_send_as_task(task));
+    auto err = doca_task_submit(doca_rdma_task_send_as_task(task.get()));
     if (err != DOCA_SUCCESS) {
       throw std::runtime_error("Failed to submit send task");
     }
   }
 
-  ~RdmaSendTask();
+  ~RdmaSendTask() = default;
 
 private:
-  doca_rdma_task_send *task;
+  std::unique_ptr<doca_rdma_task_send, rdma_send_deleter> task;
 };
 
 inline auto RdmaConnection::send(Buf buf) {
-  auto sender = rdma::task::rdma_sender<RdmaSendTask>{
-      rdma->get(), connection.get(), buf.get()};
+  auto sender = rdma::task::rdma_sender<RdmaSendTask, doca_buf *>{
+      rdma->get(), connection.get(), std::make_tuple(buf.get())};
   return sender;
 }
 
