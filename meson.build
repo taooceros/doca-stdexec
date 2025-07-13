@@ -25,7 +25,7 @@ app_dep += doca_dependencies
 subdir('include')
 subdir('test')
 
-declare_dependency(
+doca_stdexec_dep = declare_dependency(
     include_directories: inc,
-    link_with: app_dep,
+    dependencies: app_dep,
 )
