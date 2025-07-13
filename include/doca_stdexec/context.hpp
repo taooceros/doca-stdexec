@@ -20,6 +20,11 @@ struct Context {
     check_error(status, "Failed to start context");
   }
 
+  void stop() {
+    doca_error_t status = doca_ctx_stop(as_ctx());
+    check_error(status, "Failed to stop context");
+  }
+
   virtual ~Context() = default;
   virtual doca_ctx *as_ctx() noexcept = 0;
 };

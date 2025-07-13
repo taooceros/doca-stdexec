@@ -59,6 +59,7 @@ template <DocaTask TaskType>
 inline void rdma_operation_set_value(typename TaskType::raw_type *raw_task,
                                      doca_data user_data, doca_data ctx_data) {
   auto task = TaskType{raw_task};
+  task.~TaskType(); // destroy the task
   auto *op = static_cast<rdma_operation<uint8_t, TaskType> *>(user_data.ptr);
   op->set_value_callback(op);
 }

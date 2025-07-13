@@ -1,7 +1,7 @@
 [
   {
     "directory": "/home/hongtao/doca-stdexec/builddir_asan",
-    "command": "clang++-18 -Itest/rdma_loopback.p -Itest -I../test -I../stdexec/include -I/usr/lib/gcc/x86_64-linux-gnu/12/include -Iinclude -I../include -I/opt/mellanox/doca/include -I/usr/include/libnl3 -fdiagnostics-color=always -fsanitize=address -fno-omit-frame-pointer -D_GLIBCXX_ASSERTIONS=1 -D_FILE_OFFSET_BITS=64 -Wall -Winvalid-pch -std=c++23 -O0 -g -DDOCA_ALLOW_EXPERIMENTAL_API -DALLOW_EXPERIMENTAL_API -MD -MQ test/rdma_loopback.p/rdma_loopback.cpp.o -MF test/rdma_loopback.p/rdma_loopback.cpp.o.d -o test/rdma_loopback.p/rdma_loopback.cpp.o -c ../test/rdma_loopback.cpp",
+    "command": "clang++-18 -Itest/rdma_loopback.p -Itest -I../test -Istdexec/include -I/usr/lib/gcc/x86_64-linux-gnu/12/include -Iinclude -I../include -I/opt/mellanox/doca/include -I/usr/include/libnl3 -fdiagnostics-color=always -fsanitize=address -fno-omit-frame-pointer -D_GLIBCXX_ASSERTIONS=1 -D_FILE_OFFSET_BITS=64 -Wall -Winvalid-pch -std=c++23 -O0 -g -DDOCA_ALLOW_EXPERIMENTAL_API -DALLOW_EXPERIMENTAL_API -MD -MQ test/rdma_loopback.p/rdma_loopback.cpp.o -MF test/rdma_loopback.p/rdma_loopback.cpp.o.d -o test/rdma_loopback.p/rdma_loopback.cpp.o -c ../test/rdma_loopback.cpp",
     "file": "../test/rdma_loopback.cpp",
     "output": "test/rdma_loopback.p/rdma_loopback.cpp.o"
   }

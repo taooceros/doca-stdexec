@@ -1,5 +1,6 @@
 #pragma once
 #include "doca_buf.h"
+#include <cstdio>
 #ifndef DOCA_STDEXEC_RDMA_ONESIDE_HPP
 #define DOCA_STDEXEC_RDMA_ONESIDE_HPP
 
@@ -8,12 +9,13 @@
 #include <doca_rdma.h>
 #include <stdexcept>
 #include <stdexec/execution.hpp>
+#include <sanitizer/common_interface_defs.h>
 
 namespace doca_stdexec::rdma {
 
 struct rdma_write_deleter {
   void operator()(doca_rdma_task_write *task) {
-    printf("Destroying write task\n");
+    printf("write task deleter\n");
     doca_task_free(doca_rdma_task_write_as_task(task));
   }
 };

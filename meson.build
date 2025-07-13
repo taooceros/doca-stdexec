@@ -24,3 +24,8 @@ app_dep += doca_dependencies
 
 subdir('include')
 subdir('test')
+
+declare_dependency(
+    include_directories: inc,
+    link_with: app_dep,
+)

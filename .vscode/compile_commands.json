@@ -1,0 +1,6 @@
+[
+{
+  "directory": "/home/hongtao/doca-stdexec",
+  "arguments": ["/home/linuxbrew/.linuxbrew/bin/clang-18", "-c", "-Qunused-arguments", "-m64", "-Iinclude", "-o", "build/.objs/rdma_loopback/linux/x86_64/release/test/rdma_loopback.cpp.o", "test/rdma_loopback.cpp"],
+  "file": "test/rdma_loopback.cpp"
+}]
