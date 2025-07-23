@@ -38,12 +38,3 @@ target("rdma_loopback")
     add_deps("doca-stdexec")
     add_defines("DOCA_ALLOW_EXPERIMENTAL_API") -- Ensure define is applied to compilation
     add_packages("stdexec")
-
-package("doca-stdexec")
-    set_kind("library")
-    set_description("C++ sender/receiver library for NVIDIA DOCA")
-    set_license("MIT")
-    add_urls("https://github.com/NVIDIA/doca-stdexec.git")
-    add_versions("0.1.0", "auto")
-    add_includedirs("include", {public = true})
-    add_deps("stdexec")
