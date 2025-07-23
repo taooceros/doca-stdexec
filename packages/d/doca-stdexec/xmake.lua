@@ -1,7 +1,4 @@
-set_version("0.1.0")
 set_languages("c++23")
-
-
 add_defines("DOCA_ALLOW_EXPERIMENTAL_API")
 set_policy("build.sanitizer.address", true)
 add_requires("pkgconfig::doca-argp", { alias = "doca-argp" })
