@@ -1,6 +1,6 @@
-set_project("doca-stdexec")
 set_version("0.1.0")
 set_languages("c++23")
+
 
 add_defines("DOCA_ALLOW_EXPERIMENTAL_API")
 set_policy("build.sanitizer.address", true)
@@ -11,7 +11,6 @@ add_requires("pkgconfig::doca-common", { alias = "doca-common" })
 add_requires("pkgconfig::doca-dma", { alias = "doca-dma" })
 add_requires("pkgconfig::doca-rdma", { alias = "doca-rdma" })
 add_requires("pkgconfig::doca-sha", { alias = "doca-sha" })
-
 
 add_requires("stdexec main")
 
@@ -43,6 +42,8 @@ package("doca-stdexec")
     set_description("The doca-stdexec package")
     set_license("Apache-2.0")
     add_deps("doca-stdexec") -- optional: add other package dependencies
+    
+    
 
     set_urls("https://github.com/taooceros/doca-stdexec.git")
     add_versions("0.1.0", "auto") -- specify version
