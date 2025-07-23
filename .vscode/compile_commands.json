@@ -1,6 +1,6 @@
 [
 {
   "directory": "/home/hongtao/doca-stdexec",
-  "arguments": ["clang++-18", "-c", "-Qunused-arguments", "-m64", "-g", "-std=c++23", "-Iinclude", "-DDOCA_ALLOW_EXPERIMENTAL_API", "-DALLOW_EXPERIMENTAL_API", "-I", "/opt/mellanox/doca/include", "-I", "/usr/include/libnl3", "-fsanitize=address", "-o", "build/.objs/rdma_loopback/linux/x86_64/release/test/rdma_loopback.cpp.o", "test/rdma_loopback.cpp"],
+  "arguments": ["clang++-18", "-c", "-Qunused-arguments", "-m64", "-g", "-std=c++23", "-Iinclude", "-DDOCA_ALLOW_EXPERIMENTAL_API", "-DALLOW_EXPERIMENTAL_API", "-I", "/home/hongtao/.xmake/packages/s/stdexec/main/725e51fe81b74141ade9efbd3ccaf900/include", "-I", "/opt/mellanox/doca/include", "-I", "/usr/include/libnl3", "-fsanitize=address", "-o", "build/.objs/rdma_loopback/linux/x86_64/release/test/rdma_loopback.cpp.o", "test/rdma_loopback.cpp"],
   "file": "test/rdma_loopback.cpp"
 }]
