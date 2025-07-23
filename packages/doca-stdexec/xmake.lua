@@ -46,5 +46,4 @@ package("doca-stdexec")
 
     set_urls("https://github.com/taooceros/doca-stdexec.git")
     add_versions("0.1.0", "auto") -- specify version
-
 package_end()
