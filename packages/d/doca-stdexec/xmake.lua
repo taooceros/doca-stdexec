@@ -1,16 +1,3 @@
-set_languages("c++23")
-add_defines("DOCA_ALLOW_EXPERIMENTAL_API")
-set_policy("build.sanitizer.address", true)
-add_requires("pkgconfig::doca-argp", { alias = "doca-argp" })
-add_requires("pkgconfig::doca-aes-gcm", { alias = "doca-aes-gcm" })
-add_requires("pkgconfig::doca-comch", { alias = "doca-comch" })
-add_requires("pkgconfig::doca-common", { alias = "doca-common" })
-add_requires("pkgconfig::doca-dma", { alias = "doca-dma" })
-add_requires("pkgconfig::doca-rdma", { alias = "doca-rdma" })
-add_requires("pkgconfig::doca-sha", { alias = "doca-sha" })
-
-add_requires("stdexec main")
-
 
 target("doca-stdexec")
     set_kind("headeronly")
