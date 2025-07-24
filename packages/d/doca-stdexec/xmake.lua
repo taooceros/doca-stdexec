@@ -15,20 +15,24 @@ add_packages(
 )
 -- If there are headers to install, add them here e.g. add_headerfiles("include/(**.h)")
 
-target("rdma_loopback")
-    set_kind("binary")
-    add_files("test/rdma_loopback.cpp")
-    add_deps("doca-stdexec")
-    add_defines("DOCA_ALLOW_EXPERIMENTAL_API") -- Ensure define is applied to compilation
-    add_packages("stdexec")
-
 package("doca-stdexec")
+    set_kind("library", {headeronly = true})
     set_description("The doca-stdexec package")
-    set_license("Apache-2.0")
-    add_deps("doca-stdexec") -- optional: add other package dependencies
-    
-    
 
-    set_urls("https://github.com/taooceros/doca-stdexec.git")
-    add_versions("0.1.0", "auto") -- specify version
-package_end()
+    add_deps("pkgconfig::doca-argp")
+    add_deps("pkgconfig::doca-aes-gcm")
+    add_deps("pkgconfig::doca-comch")
+    add_deps("pkgconfig::doca-common")
+    add_deps("pkgconfig::doca-dma")
+    add_deps("pkgconfig::doca-rdma")
+    add_deps("pkgconfig::doca-sha")
+
+    on_load(function (package)
+        package:set("installdir", path.join(os.scriptdir(), package:plat(), package:arch(), package:mode()))
+    end)
+
+    on_fetch(function (package)
+        local result = {}
+        result.includedirs = package:installdir("include")
+        return result
+    end)
