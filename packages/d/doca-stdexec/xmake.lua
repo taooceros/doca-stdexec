@@ -1,20 +1,3 @@
-
-target("doca-stdexec")
-    set_kind("headeronly")
-    add_includedirs("include", { public = true })
-
-add_packages(
-	"doca-argp",
-	"doca-aes-gcm",
-	"doca-comch",
-	"doca-common",
-	"doca-dma",
-	"doca-rdma",
-	"doca-sha",
-	{ public = true }
-)
--- If there are headers to install, add them here e.g. add_headerfiles("include/(**.h)")
-
 package("doca-stdexec")
     set_kind("library", {headeronly = true})
     set_description("The doca-stdexec package")
