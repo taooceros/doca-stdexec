@@ -1,21 +1,39 @@
-package("doca-stdexec")
-    set_kind("library", {headeronly = true})
-    set_description("The doca-stdexec package")
+set_project("doca-stdexec")
+set_version("0.1.0")
+set_languages("c++23")
+add_defines("DOCA_ALLOW_EXPERIMENTAL_API")
+set_policy("build.sanitizer.address", true)
+add_requires("pkgconfig::doca-argp", { alias = "doca-argp" })
+add_requires("pkgconfig::doca-aes-gcm", { alias = "doca-aes-gcm" })
+add_requires("pkgconfig::doca-comch", { alias = "doca-comch" })
+add_requires("pkgconfig::doca-common", { alias = "doca-common" })
+add_requires("pkgconfig::doca-dma", { alias = "doca-dma" })
+add_requires("pkgconfig::doca-rdma", { alias = "doca-rdma" })
+add_requires("pkgconfig::doca-sha", { alias = "doca-sha" })
 
-    add_deps("pkgconfig::doca-argp")
-    add_deps("pkgconfig::doca-aes-gcm")
-    add_deps("pkgconfig::doca-comch")
-    add_deps("pkgconfig::doca-common")
-    add_deps("pkgconfig::doca-dma")
-    add_deps("pkgconfig::doca-rdma")
-    add_deps("pkgconfig::doca-sha")
+add_requires("stdexec main")
 
-    on_load(function (package)
-        package:set("installdir", path.join(os.scriptdir(), package:plat(), package:arch(), package:mode()))
-    end)
+target("doca-stdexec")
+    set_kind("headeronly")
+    add_includedirs("include", { public = true })
 
-    on_fetch(function (package)
-        local result = {}
-        result.includedirs = package:installdir("include")
-        return result
-    end)
+add_packages(
+	"doca-argp",
+	"doca-aes-gcm",
+	"doca-comch",
+	"doca-common",
+	"doca-dma",
+	"doca-rdma",
+	"doca-sha",
+	{ public = true }
+)
+
+
+-- If there are headers to install, add them here e.g. add_headerfiles("include/(**.h)")
+
+target("rdma_loopback")
+    set_kind("binary")
+    add_files("test/rdma_loopback.cpp")
+    add_deps("doca-stdexec")
+    add_defines("DOCA_ALLOW_EXPERIMENTAL_API") -- Ensure define is applied to compilation
+    add_packages("stdexec")
