@@ -37,3 +37,8 @@ target("rdma_loopback")
     add_deps("doca-stdexec")
     add_defines("DOCA_ALLOW_EXPERIMENTAL_API") -- Ensure define is applied to compilation
     add_packages("stdexec")
+
+target("doca-stdexec")
+    set_kind("headeronly")
+    add_includedirs("include", { public = true })
+	add_packages("stdexec")
