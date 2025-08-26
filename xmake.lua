@@ -27,6 +27,7 @@ add_packages(
 	"doca-sha",
 	{ public = true }
 )
+add_defines("DOCA_ALLOW_EXPERIMENTAL_API") -- Ensure define is applied to compilation
 
 
 -- If there are headers to install, add them here e.g. add_headerfiles("include/(**.h)")
@@ -35,7 +36,6 @@ target("rdma_loopback")
     set_kind("binary")
     add_files("test/rdma_loopback.cpp")
     add_deps("doca-stdexec")
-    add_defines("DOCA_ALLOW_EXPERIMENTAL_API") -- Ensure define is applied to compilation
     add_packages("stdexec")
 
 target("doca-stdexec")
