@@ -11,12 +11,22 @@
 #include <system_error>
 #include <vector>
 
+#if defined(__has_feature)
+#   if __has_feature(address_sanitizer) // for clang
+#       define __SANITIZE_ADDRESS__ // GCC already sets this
+#   endif
+#endif
+
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+
+#if defined(__SANITIZE_ADDRESS__)
 #include <sanitizer/common_interface_defs.h>
+#endif
+
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -25,11 +35,15 @@ namespace doca_stdexec::tcp {
 class socket_error : public std::system_error {
 public:
     socket_error(int code, const std::string& what) : std::system_error(code, std::system_category(), what) {
+#if defined(__SANITIZE_ADDRESS__)
         __sanitizer_print_stack_trace();
+#endif
     }
 
     explicit socket_error(const std::string& what) : std::system_error(errno, std::system_category(), what) {
+#if defined(__SANITIZE_ADDRESS__)
         __sanitizer_print_stack_trace();
+#endif
     }
 };
 
