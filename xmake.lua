@@ -40,7 +40,5 @@ target("rdma_loopback")
 
 target("doca-stdexec")
     set_kind("headeronly")
-    add_headerfiles("include/(doca_stdexec/*.hpp)")
-    add_headerfiles("include/(doca_stdexec/*.h)")
     add_includedirs("include", { public = true })
 	add_packages("stdexec")
