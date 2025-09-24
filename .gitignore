@@ -2,3 +2,4 @@
 .cache/
 .xmake/
 build/
+x86_64/
