@@ -9,7 +9,7 @@
 #include <doca_rdma.h>
 #include <stdexcept>
 #include <stdexec/execution.hpp>
-#include <sanitizer/common_interface_defs.h>
+#include "doca_stdexec/common.hpp"
 
 namespace doca_stdexec::rdma {
 
