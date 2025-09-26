@@ -278,6 +278,9 @@ public:
 
     doca_pe_context() : doca_pe_context(ProgressEngine{}) {}
 
+    doca_pe_context(doca_pe_context&&) = default;
+    doca_pe_context& operator=(doca_pe_context&&) = default;
+
     auto& get_pe() noexcept {
         return loop_.pe;
     }
