@@ -210,7 +210,7 @@ public:
     /**
      * @brief Get data length
      */
-    size_t get_data_len() const {
+    [[nodiscard]] size_t get_data_len() const {
         if (!buf_) {
             check_error(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
         }
@@ -223,7 +223,7 @@ public:
     /**
      * @brief Get data pointer
      */
-    void* get_data() const {
+    [[nodiscard]] void* get_data() const {
         if (!buf_) {
             check_error(DOCA_ERROR_INVALID_VALUE, "Invalid buffer");
         }
@@ -231,6 +231,15 @@ public:
         doca_error_t result = doca_buf_get_data(buf_, &data);
         check_error(result, "get data pointer");
         return data;
+    }
+
+
+    [[nodiscard]] void* data() const {
+        return get_data();
+    }
+
+    [[nodiscard]] size_t size_bytes() const {
+        return get_data_len();
     }
 
     /**
@@ -245,9 +254,9 @@ public:
      * @brief Get data as span of bytes
      */
     [[nodiscard]] std::span<std::byte> get_data_span() const {
-        void* data = get_data();
+        void* ptr = get_data();
         size_t len = get_data_len();
-        return {static_cast<std::byte*>(data), len};
+        return {static_cast<std::byte*>(ptr), len};
     }
 
     /**
